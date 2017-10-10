@@ -21,7 +21,7 @@
 #import "FBUnknownCommands.h"
 #import "FBConfiguration.h"
 #import "FBLogger.h"
-
+#include <sys/stat.h>
 #import "XCUIDevice+FBHelpers.h"
 
 static NSString *const FBServerURLBeginMarker = @"ServerURLHere->";
@@ -107,6 +107,18 @@ static NSString *const FBServerURLEndMarker = @"<-ServerURLHere";
     abort();
   }
   [FBLogger logFmt:@"%@http://%@:%d%@", FBServerURLBeginMarker, [XCUIDevice sharedDevice].fb_wifiIPAddress ?: @"localhost", [self.server port], FBServerURLEndMarker];
+  NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+  NSString * g_docPath = [[NSString alloc] initWithString:(NSString*)[paths objectAtIndex:0]];
+  NSString* tsFilePath = [NSString stringWithFormat:@"%@/webdriver.dat", g_docPath];
+  struct stat temp;
+  NSFileManager* oFileMgr = [NSFileManager defaultManager];
+  if(lstat(tsFilePath.UTF8String, &temp) == 0)
+  {
+    [oFileMgr removeItemAtPath:tsFilePath error:nil];
+  }
+  [oFileMgr createFileAtPath:tsFilePath contents:nil attributes:nil];
+  NSString *data = [NSString stringWithFormat:@"%u",[self.server port]];
+  [data writeToFile:tsFilePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
 }
 
 - (void)stopServing
